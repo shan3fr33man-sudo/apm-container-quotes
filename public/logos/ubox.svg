@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <rect width="120" height="120" rx="16" fill="#FF6600"/>
+  <text x="60" y="50" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="white">U-BOX</text>
+  <text x="60" y="72" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="white">by U-Haul</text>
+  <rect x="30" y="80" width="60" height="20" rx="4" fill="white" opacity="0.2"/>
+  <text x="60" y="94" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="white">257 cu ft</text>
+</svg>
