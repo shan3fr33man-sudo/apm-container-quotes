@@ -147,15 +147,6 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     usableWeight: 4200,
     dimensions: "16' L x 8' W x 8' H",
   },
-  relocube: {
-    name: "ReloCube",
-    cubicFeet: 308,
-    maxWeight: 2000,
-    usableCubicFeet: 231,
-    usableWeight: 2000,
-    dimensions: "6'3\" L x 7' W x 8'4\" H",
-    longDistanceOnly: true,
-  },
 };
 
 // --- U-Box Pricing ---
@@ -203,20 +194,13 @@ export const PODS_PRICING = {
 
 export const ABF_PRICING = {
   minimumDistance: 100,
-  baseFee: 800,
-  tier1PerMile: 1.80,
-  tier1Limit: 500,
-  tier2PerMile: 1.30,
-  tier2Limit: 1500,
-  tier3PerMile: 1.00,
+  baseFee: 2000,
+  perMile: 1.60,
+  maxPrice: 5500,
+  cuFtPerLinearFoot: 72,
+  maxLinearFeet: 28,
+  minLinearFeet: 5,
   storagePerMonth: 150,
-  volumeDiscount3Plus: 0.95,
-  trailerBase: 2000,
-  trailerPerMile: 1.60,
-  trailerMaxPrice: 5500,
-  trailerCuFtPerLinearFoot: 72,
-  trailerMaxLinearFeet: 28,
-  trailerMinLinearFeet: 5,
 };
 
 // --- Transit Times ---

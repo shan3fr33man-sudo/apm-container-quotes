@@ -110,14 +110,6 @@ export interface ProviderQuote {
   };
 }
 
-export interface TrailerAlternative {
-  priceRange: PriceRange;
-  linearFeet: number;
-  description: string;
-  note: string;
-  capacity: CapacityInfo;
-}
-
 export interface MoveEstimate {
   cubicFeet: number;
   weightLbs: number;
@@ -135,7 +127,6 @@ export interface QuoteResult {
   moveEstimate: MoveEstimate;
   seasonalMultiplier: number;
   seasonLabel: string;
-  trailerAlternative?: TrailerAlternative;
   recommendation: string;
 }
 

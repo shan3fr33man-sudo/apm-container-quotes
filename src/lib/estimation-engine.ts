@@ -3,7 +3,6 @@ import type {
   ProviderQuote,
   PriceBreakdown,
   PriceRange,
-  TrailerAlternative,
   MoveEstimate,
   CapacityInfo,
   WeightStatus,
@@ -395,38 +394,39 @@ function estimateAbf(
     };
   }
 
-  const spec = CONTAINER_SPECS.relocube;
-  const containersNeeded = calculateContainersNeeded(estimate.cubicFeet, estimate.weightLbs, spec);
+  const linearFeetNeeded = Math.max(
+    ABF_PRICING.minLinearFeet,
+    Math.min(Math.ceil(estimate.cubicFeet / ABF_PRICING.cuFtPerLinearFoot), ABF_PRICING.maxLinearFeet)
+  );
+
   const breakdown: PriceBreakdown[] = [];
+  let total = Math.min(
+    ABF_PRICING.baseFee + distanceMiles * ABF_PRICING.perMile,
+    ABF_PRICING.maxPrice
+  );
+  total = Math.round(total * seasonalMult);
 
-  const pricePerCube = computeTieredShipping(distanceMiles, ABF_PRICING.baseFee, [
-    { limit: ABF_PRICING.tier1Limit, rate: ABF_PRICING.tier1PerMile },
-    { limit: ABF_PRICING.tier2Limit, rate: ABF_PRICING.tier2PerMile },
-    { limit: Infinity, rate: ABF_PRICING.tier3PerMile },
-  ]);
-  const discount = containersNeeded >= 3 ? ABF_PRICING.volumeDiscount3Plus : 1.0;
-  const discountedPrice = Math.round(pricePerCube * discount);
-  let total = discountedPrice * containersNeeded;
-
-  breakdown.push({ label: `${containersNeeded} ReloCube${containersNeeded > 1 ? "s" : ""} (all-inclusive)`, amount: total });
-  if (discount < 1.0) {
-    breakdown.push({ label: `Volume discount (${Math.round((1 - discount) * 100)}% off)`, amount: -Math.round((pricePerCube - discountedPrice) * containersNeeded) });
-  }
+  breakdown.push({ label: `Freight trailer — ${linearFeetNeeded} linear ft`, amount: total });
 
   if (request.storageNeeded && request.storageMonths) {
-    const storageCost = Math.round(ABF_PRICING.storagePerMonth * request.storageMonths * containersNeeded);
+    const storageCost = Math.round(ABF_PRICING.storagePerMonth * request.storageMonths);
     breakdown.push({ label: `Storage (${request.storageMonths} mo)`, amount: storageCost });
     total += storageCost;
   }
 
-  total = Math.round(total * seasonalMult);
-  const capacity = makeCapacity(estimate.cubicFeet, estimate.weightLbs, containersNeeded, spec);
+  const trailerCuFt = linearFeetNeeded * ABF_PRICING.cuFtPerLinearFoot;
+  const capacity: CapacityInfo = {
+    totalCubicFeet: trailerCuFt,
+    bufferPercent: estimate.cubicFeet > 0 ? Math.round(((trailerCuFt - estimate.cubicFeet) / estimate.cubicFeet) * 100) : 0,
+    weightStatus: "ok",
+    weightMessage: "Trailer has no per-unit weight limit",
+    totalWeightCapacity: 99999,
+    estimatedWeight: estimate.weightLbs,
+  };
 
   const notes: string[] = [];
   notes.push("All-inclusive: delivery, transport, standard liability");
   notes.push("3 days to load, 3 days to unload included");
-  if (containersNeeded >= 3) notes.push("Consider U-Pack trailer option below — often cheaper");
-  if (capacity.weightStatus === "tight") notes.push(capacity.weightMessage);
 
   return {
     provider: "abf",
@@ -434,52 +434,16 @@ function estimateAbf(
     priceRange: toRange(total),
     breakdown,
     transitDays: getTransitTime("abf", distanceMiles),
-    containerConfig: [{ size: "ReloCube (308 cu ft)", count: containersNeeded }],
-    containerLabel: `${containersNeeded} x ReloCube`,
-    containersNeeded,
+    containerConfig: [{ size: "Freight Trailer", count: 1 }],
+    containerLabel: `28-ft trailer (${linearFeetNeeded} linear ft used)`,
+    containersNeeded: 1,
     capacity,
     notes,
-    includes: ["Guaranteed pricing — no hidden fees", "Professional drivers", "Trackable shipments", "3 business days load + 3 unload", "Standard liability coverage", "Only pay for cubes you use"],
+    includes: ["Guaranteed pricing — no hidden fees", "Professional drivers", "Trackable shipments", "3 business days load + 3 unload", "Standard liability coverage", "Only pay for linear feet you use"],
     isEstimate: true,
     isCheapest: false,
     bookingUrl: PROVIDER_URLS.abf,
     seasonalMultiplier: seasonalMult,
-  };
-}
-
-// --- Trailer Alternative ---
-
-function estimateTrailerAlternative(
-  distanceMiles: number,
-  seasonalMult: number,
-  estimate: MoveEstimate
-): TrailerAlternative | undefined {
-  const linearFeetNeeded = Math.max(
-    ABF_PRICING.trailerMinLinearFeet,
-    Math.min(Math.ceil(estimate.cubicFeet / ABF_PRICING.trailerCuFtPerLinearFoot), ABF_PRICING.trailerMaxLinearFeet)
-  );
-  const trailerCost = Math.min(
-    ABF_PRICING.trailerBase + distanceMiles * ABF_PRICING.trailerPerMile,
-    ABF_PRICING.trailerMaxPrice
-  );
-  const adjusted = Math.round(trailerCost * seasonalMult);
-  const trailerCuFt = linearFeetNeeded * ABF_PRICING.trailerCuFtPerLinearFoot;
-
-  return {
-    priceRange: toRange(adjusted),
-    linearFeet: linearFeetNeeded,
-    description: `U-Pack trailer — ${linearFeetNeeded} linear ft`,
-    note: linearFeetNeeded >= 28
-      ? "Full 28-ft trailer. Fits most 3-4+ bedroom homes."
-      : `Pay only for ${linearFeetNeeded} ft used. Often cheaper than multiple ReloCubes.`,
-    capacity: {
-      totalCubicFeet: trailerCuFt,
-      bufferPercent: estimate.cubicFeet > 0 ? Math.round(((trailerCuFt - estimate.cubicFeet) / estimate.cubicFeet) * 100) : 0,
-      weightStatus: "ok",
-      weightMessage: "Trailer has no per-unit weight limit",
-      totalWeightCapacity: 99999,
-      estimatedWeight: estimate.weightLbs,
-    },
   };
 }
 
@@ -513,7 +477,6 @@ export function getEstimates(
   moveEstimate: MoveEstimate;
   seasonalMultiplier: number;
   seasonLabel: string;
-  trailerAlternative?: TrailerAlternative;
   recommendation: string;
 } {
   const isLocal = distanceMiles < LOCAL_MOVE_THRESHOLD_MILES;
@@ -534,14 +497,7 @@ export function getEstimates(
     }
   }
 
-  // Trailer alternative when 3+ cubes needed
-  const abfQuote = quotes.find((q) => q.provider === "abf");
-  let trailerAlternative: TrailerAlternative | undefined;
-  if (abfQuote && !abfQuote.unavailable && abfQuote.containersNeeded >= 3) {
-    trailerAlternative = estimateTrailerAlternative(distanceMiles, seasonalMult, estimate);
-  }
-
   const recommendation = generateRecommendation(estimate, distanceMiles);
 
-  return { quotes, moveEstimate: estimate, seasonalMultiplier: seasonalMult, seasonLabel, trailerAlternative, recommendation };
+  return { quotes, moveEstimate: estimate, seasonalMultiplier: seasonalMult, seasonLabel, recommendation };
 }

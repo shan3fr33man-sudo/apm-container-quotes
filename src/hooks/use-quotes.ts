@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import type { QuoteRequest, QuoteResult } from "@/types";
-import { calculateDistance } from "@/lib/distance";
+import { calculateDistanceAsync } from "@/lib/distance";
 import { getEstimates } from "@/lib/estimation-engine";
 import { LOCAL_MOVE_THRESHOLD_MILES } from "@/lib/constants";
 
@@ -22,9 +22,9 @@ export function useQuotes(): UseQuotesReturn {
     setError(null);
     setResult(null);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const distanceMiles = calculateDistance(
+        const distanceMiles = await calculateDistanceAsync(
           request.originCity,
           request.destinationCity
         );
@@ -37,7 +37,7 @@ export function useQuotes(): UseQuotesReturn {
           return;
         }
 
-        const { quotes, moveEstimate, seasonalMultiplier, seasonLabel, trailerAlternative, recommendation } =
+        const { quotes, moveEstimate, seasonalMultiplier, seasonLabel, recommendation } =
           getEstimates(request, distanceMiles);
         const isLocalMove = distanceMiles < LOCAL_MOVE_THRESHOLD_MILES;
 
@@ -49,7 +49,6 @@ export function useQuotes(): UseQuotesReturn {
           moveEstimate,
           seasonalMultiplier,
           seasonLabel,
-          trailerAlternative,
           recommendation,
         });
       } catch (e) {

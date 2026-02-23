@@ -1,11 +1,10 @@
 import { format } from "date-fns";
-import { MapPin, Calendar, Ruler, Package, Weight, TrendingUp, Truck, ExternalLink, Home, Lightbulb } from "lucide-react";
+import { MapPin, Calendar, Ruler, Package, Weight, TrendingUp, Home, Lightbulb } from "lucide-react";
 import type { QuoteResult } from "@/types";
 import { PRICING_LAST_UPDATED } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ProviderCard } from "./provider-card";
 
@@ -44,7 +43,7 @@ export function QuoteResults({ result, isLoading, error }: QuoteResultsProps) {
 
   if (!result) return null;
 
-  const { request, quotes, distanceMiles, isLocalMove, moveEstimate, seasonalMultiplier, seasonLabel, trailerAlternative, recommendation } = result;
+  const { request, quotes, distanceMiles, isLocalMove, moveEstimate, seasonalMultiplier, seasonLabel, recommendation } = result;
 
   return (
     <div className="space-y-6">
@@ -135,39 +134,6 @@ export function QuoteResults({ result, isLoading, error }: QuoteResultsProps) {
           />
         ))}
       </div>
-
-      {/* Trailer Alternative */}
-      {trailerAlternative && (
-        <Card className="border-blue-200 bg-blue-50/50 p-5 dark:border-blue-900 dark:bg-blue-950/20">
-          <div className="flex items-start gap-3">
-            <Truck className="mt-0.5 size-5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium text-blue-900 dark:text-blue-200">
-                    Trailer Alternative: {trailerAlternative.description}
-                  </p>
-                  <p className="text-sm text-blue-700 dark:text-blue-400">
-                    Estimated: ${trailerAlternative.priceRange.low.toLocaleString()} – ${trailerAlternative.priceRange.high.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
-                    {trailerAlternative.capacity.totalCubicFeet.toLocaleString()} cu ft total | +{trailerAlternative.capacity.bufferPercent}% buffer
-                  </p>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <a href="https://www.upack.com/quote" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-1 size-3" />
-                    Get Trailer Quote
-                  </a>
-                </Button>
-              </div>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                {trailerAlternative.note}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {/* Disclaimer */}
       <div className="space-y-1 text-center text-xs text-muted-foreground">
