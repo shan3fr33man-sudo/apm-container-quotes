@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Screenshots and temp scripts
+*.png
+*.ps1
+take-screenshot.mjs
