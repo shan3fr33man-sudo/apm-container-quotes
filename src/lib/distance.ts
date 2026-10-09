@@ -1,6 +1,7 @@
 import type { CityCoords } from "@/types";
 import { US_CITIES } from "./cities";
 import { ROAD_DISTANCE_MULTIPLIER } from "./constants";
+import { getDistanceMatrix } from "./google-maps";
 
 const STATE_ABBR_MAP: Record<string, string> = {
   alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
@@ -109,4 +110,16 @@ export function calculateDistance(origin: string, destination: string): number |
   );
 
   return Math.round(straightLine * ROAD_DISTANCE_MULTIPLIER);
+}
+
+export async function calculateDistanceAsync(
+  origin: string,
+  destination: string
+): Promise<number | null> {
+  // Try Google Distance Matrix first for accurate driving distance
+  const googleDistance = await getDistanceMatrix(origin, destination);
+  if (googleDistance !== null) return googleDistance;
+
+  // Fall back to Haversine calculation
+  return calculateDistance(origin, destination);
 }

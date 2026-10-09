@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import {
+  Bookmark,
   CalendarIcon,
   ChevronDown,
   ChevronUp,
@@ -59,9 +60,11 @@ const FURNISHING_OPTIONS: FurnishingLevel[] = ["light", "average", "heavy"];
 interface QuoteFormProps {
   onSubmit: (request: QuoteRequest) => void;
   isLoading: boolean;
+  initialData?: QuoteRequest | null;
+  onSave?: (request: QuoteRequest) => void;
 }
 
-export function QuoteForm({ onSubmit, isLoading }: QuoteFormProps) {
+export function QuoteForm({ onSubmit, isLoading, initialData, onSave }: QuoteFormProps) {
   const [originCity, setOriginCity] = useState("");
   const [destinationCity, setDestinationCity] = useState("");
   const [moveDate, setMoveDate] = useState<Date | undefined>();
@@ -75,6 +78,24 @@ export function QuoteForm({ onSubmit, isLoading }: QuoteFormProps) {
   const [customerEmail, setCustomerEmail] = useState("");
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!initialData) return;
+    setOriginCity(initialData.originCity);
+    setDestinationCity(initialData.destinationCity);
+    setMoveDate(initialData.moveDate);
+    setDeliveryDate(initialData.deliveryDate);
+    setHomeSize(initialData.homeSize);
+    setFurnishingLevel(initialData.furnishingLevel);
+    setStorageNeeded(initialData.storageNeeded);
+    setStorageMonths(initialData.storageMonths ?? 1);
+    setCustomerName(initialData.customerName ?? "");
+    setCustomerPhone(initialData.customerPhone ?? "");
+    setCustomerEmail(initialData.customerEmail ?? "");
+    if (initialData.customerName) {
+      setShowCustomerInfo(true);
+    }
+  }, [initialData]);
 
   const sizeData = useMemo(() => HOME_SIZE_DATA[homeSize], [homeSize]);
   const estimatedCuFt = sizeData.cubicFeet[furnishingLevel];
@@ -369,19 +390,59 @@ export function QuoteForm({ onSubmit, isLoading }: QuoteFormProps) {
             )}
           </div>
 
-          <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
-                Getting Quotes...
-              </>
-            ) : (
-              <>
-                <Search className="mr-2 size-4" />
-                Get Quotes
-              </>
+          <div className="flex gap-3">
+            <Button type="submit" size="lg" className="flex-1" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Getting Quotes...
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 size-4" />
+                  Get Quotes
+                </>
+              )}
+            </Button>
+            {onSave && (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  const data = {
+                    originCity,
+                    destinationCity,
+                    moveDate,
+                    deliveryDate: deliveryDate || undefined,
+                    homeSize,
+                    furnishingLevel,
+                    storageNeeded,
+                    storageMonths: storageNeeded ? storageMonths : undefined,
+                    customerName: customerName || undefined,
+                    customerPhone: customerPhone || undefined,
+                    customerEmail: customerEmail || undefined,
+                  };
+                  const result = QuoteRequestSchema.safeParse(data);
+                  if (result.success) {
+                    onSave(result.data);
+                  } else {
+                    const fieldErrors: Record<string, string> = {};
+                    for (const issue of result.error.issues) {
+                      const key = issue.path[0]?.toString() ?? "form";
+                      if (!fieldErrors[key]) {
+                        fieldErrors[key] = issue.message;
+                      }
+                    }
+                    setErrors(fieldErrors);
+                  }
+                }}
+              >
+                <Bookmark className="mr-2 size-4" />
+                Save Search
+              </Button>
             )}
-          </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

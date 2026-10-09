@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { getSuggestions } from "@/lib/distance";
+import { isGoogleMapsAvailable, getPlaceSuggestions } from "@/lib/google-maps";
 
 interface AddressInputProps {
   value: string;
@@ -19,6 +20,8 @@ export function AddressInput({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const useGoogle = isGoogleMapsAvailable();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -30,12 +33,38 @@ export function AddressInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const fetchSuggestions = useCallback(
+    (input: string) => {
+      if (!useGoogle) {
+        const results = getSuggestions(input);
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+        setHighlightedIndex(-1);
+        return;
+      }
+
+      // Debounce Google API calls
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        const results = await getPlaceSuggestions(input);
+        if (results.length > 0) {
+          setSuggestions(results);
+          setShowSuggestions(true);
+        } else {
+          // Fall back to local suggestions if Google returns nothing
+          const local = getSuggestions(input);
+          setSuggestions(local);
+          setShowSuggestions(local.length > 0);
+        }
+        setHighlightedIndex(-1);
+      }, 300);
+    },
+    [useGoogle]
+  );
+
   function handleInputChange(newValue: string) {
     onChange(newValue);
-    const results = getSuggestions(newValue);
-    setSuggestions(results);
-    setShowSuggestions(results.length > 0);
-    setHighlightedIndex(-1);
+    fetchSuggestions(newValue);
   }
 
   function selectSuggestion(suggestion: string) {
