@@ -27,3 +27,6 @@ dist-ssr
 *.png
 *.ps1
 take-screenshot.mjs
+
+# Local secrets (.env.example stays committed)
+.env
